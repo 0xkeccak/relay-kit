@@ -14,10 +14,6 @@ import {
   GetQuoteParameters,
   LogLevel
 } from '@relayprotocol/relay-sdk'
-<<<<<<< HEAD
-import { adaptSuiWallet } from '@relayprotocol/relay-sui-wallet-adapter'
-=======
->>>>>>> ea91146b7cd2e6ec45f4a577155a2335cca42a25
 import {
   adaptLighterWallet,
   LIGHTER_CHAIN_ID
