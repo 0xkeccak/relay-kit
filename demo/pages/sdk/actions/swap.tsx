@@ -14,13 +14,15 @@ import {
   GetQuoteParameters,
   LogLevel
 } from '@relayprotocol/relay-sdk'
+<<<<<<< HEAD
 import { adaptSuiWallet } from '@relayprotocol/relay-sui-wallet-adapter'
+=======
+>>>>>>> ea91146b7cd2e6ec45f4a577155a2335cca42a25
 import {
   adaptLighterWallet,
   LIGHTER_CHAIN_ID
 } from '@relayprotocol/relay-lighter-wallet-adapter'
 import { isBitcoinWallet } from '@dynamic-labs/bitcoin'
-import { isSuiWallet } from '@dynamic-labs/sui'
 import { BaseApiSwitcher } from 'components/navbar/BaseApiSwitcher'
 
 const SwapActionPage: NextPage = () => {
@@ -278,31 +280,6 @@ const SwapActionPage: NextPage = () => {
                     } catch (e) {
                       throw e
                     }
-                  }
-                )
-              } else if (isSuiWallet(primaryWallet)) {
-                const walletClient = await primaryWallet.getWalletClient()
-
-                if (!walletClient) {
-                  throw 'Unable to setup Sui wallet'
-                }
-
-                executionWallet = adaptSuiWallet(
-                  primaryWallet?.address,
-                  quoteParams.originChainId,
-                  walletClient,
-                  async (tx) => {
-                    const signedTransaction =
-                      await primaryWallet.signTransaction(tx)
-
-                    const executionResult =
-                      await walletClient?.executeTransactionBlock({
-                        options: {},
-                        signature: signedTransaction.signature,
-                        transactionBlock: signedTransaction.bytes
-                      })
-
-                    return executionResult
                   }
                 )
               } else {

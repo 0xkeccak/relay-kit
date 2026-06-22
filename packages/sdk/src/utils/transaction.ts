@@ -1,33 +1,33 @@
-import { type Address, type TransactionReceipt } from 'viem'
-import { LogLevel } from './logger.js'
+import { type Address, type TransactionReceipt } from "viem";
+import { LogLevel } from "./logger.js";
 import type {
   Execute,
   AdaptedWallet,
   TransactionStepItem,
   paths,
   SvmReceipt,
-  SuiReceipt,
   TronReceipt,
-  LvmReceipt
-} from '../types/index.js'
-import { axios } from '../utils/axios.js'
+  TonReceipt,
+  LvmReceipt,
+} from "../types/index.js";
+import { axios } from "../utils/axios.js";
 import type {
   AxiosRequestConfig,
   AxiosRequestHeaders,
-  AxiosResponse
-} from 'axios'
-import { getClient } from '../client.js'
+  AxiosResponse,
+} from "axios";
+import { getClient } from "../client.js";
 import {
   DepositTransactionTimeoutError,
   SolverStatusTimeoutError,
-  TransactionConfirmationError
-} from '../errors/index.js'
-import { getApiKeyHeader } from './apiKey.js'
-import { repeatUntilOk } from '../utils/repeatUntilOk.js'
+  TransactionConfirmationError,
+} from "../errors/index.js";
+import { getApiKeyHeader } from "./apiKey.js";
+import { repeatUntilOk } from "../utils/repeatUntilOk.js";
 import {
   getTenderlyDetails,
-  type TenderlyErrorInfo
-} from '../utils/getTenderlyDetails.js'
+  type TenderlyErrorInfo,
+} from "../utils/getTenderlyDetails.js";
 
 /**
  * Safe txhash.wait which handles replacements when users speed up the transaction
@@ -37,96 +37,96 @@ import {
 export async function sendTransactionSafely(
   chainId: number,
   items: TransactionStepItem | TransactionStepItem[],
-  step: Execute['steps'][0],
+  step: Execute["steps"][0],
   wallet: AdaptedWallet,
   setTxHashes: (
-    tx: NonNullable<Execute['steps'][0]['items']>[0]['txHashes']
+    tx: NonNullable<Execute["steps"][0]["items"]>[0]["txHashes"],
   ) => void,
   setInternalTxHashes: (
-    tx: NonNullable<Execute['steps'][0]['items']>[0]['internalTxHashes']
+    tx: NonNullable<Execute["steps"][0]["items"]>[0]["internalTxHashes"],
   ) => void,
   onWebsocketFailed: (() => Promise<void>) | null,
   request: AxiosRequestConfig,
   headers?: AxiosRequestHeaders,
   crossChainIntentChainId?: number,
   isValidating?: (res?: AxiosResponse<any, any>) => void,
-  details?: Execute['details'],
+  details?: Execute["details"],
   setReceipt?: (
     receipt:
       | TransactionReceipt
       | SvmReceipt
-      | SuiReceipt
       | TronReceipt
-      | LvmReceipt
+      | TonReceipt
+      | LvmReceipt,
   ) => void,
   setCheckStatus?: (
-    checkStatus: NonNullable<Execute['steps'][0]['items']>[0]['checkStatus']
+    checkStatus: NonNullable<Execute["steps"][0]["items"]>[0]["checkStatus"],
   ) => void,
-  statusControl?: { lastKnownStatus?: string }
+  statusControl?: { lastKnownStatus?: string },
 ) {
-  const client = getClient()
+  const client = getClient();
   try {
     //In some cases wallets can be delayed when switching chains, causing this check to fail.
     //To work around this we check the chain id of the active wallet a few times before declaring it a failure
     await repeatUntilOk(
       async () => {
-        const walletChainId = await wallet.getChainId()
-        return walletChainId === chainId
+        const walletChainId = await wallet.getChainId();
+        return walletChainId === chainId;
       },
       10,
       undefined,
-      250
-    )
+      250,
+    );
   } catch (e) {
-    const walletChainId = await wallet.getChainId()
-    throw `Current chain id: ${walletChainId} does not match expected chain id: ${chainId} `
+    const walletChainId = await wallet.getChainId();
+    throw `Current chain id: ${walletChainId} does not match expected chain id: ${chainId} `;
   }
   let receipt:
     | TransactionReceipt
     | SvmReceipt
-    | SuiReceipt
     | TronReceipt
+    | TonReceipt
     | LvmReceipt
-    | undefined
-  let transactionCancelled = false
-  let confirmationError = false
-  const pollingInterval = client.pollingInterval ?? 5000
+    | undefined;
+  let transactionCancelled = false;
+  let confirmationError = false;
+  const pollingInterval = client.pollingInterval ?? 5000;
   const maximumAttempts =
     client.maxPollingAttemptsBeforeTimeout ??
-    (2.5 * 60 * 1000) / pollingInterval // default to 2 minutes and 30 seconds worth of attempts
-  let waitingForConfirmation = true
-  let attemptCount = 0
-  let txHash: string | undefined
+    (2.5 * 60 * 1000) / pollingInterval; // default to 2 minutes and 30 seconds worth of attempts
+  let waitingForConfirmation = true;
+  let attemptCount = 0;
+  let txHash: string | undefined;
 
   // Check if batching txs is supported and if there are multiple items to batch
   const isBatchTransaction = Boolean(
     Array.isArray(items) &&
       items.length > 1 &&
-      wallet.handleBatchTransactionStep
-  )
+      wallet.handleBatchTransactionStep,
+  );
 
   if (isBatchTransaction) {
     txHash = await wallet.handleBatchTransactionStep?.(
       chainId,
       items as TransactionStepItem[],
-      step
-    )
+      step,
+    );
   } else {
     txHash = await wallet.handleSendTransactionStep(
       chainId,
       Array.isArray(items) ? items[0] : items,
-      step
-    )
+      step,
+    );
   }
 
-  if ((txHash as any) === 'null') {
-    throw 'User rejected the request'
+  if ((txHash as any) === "null") {
+    throw "User rejected the request";
   }
 
   // Find the first item with a check endpoint
   const check = Array.isArray(items)
     ? items.find((item) => item.check)?.check
-    : items.check
+    : items.check;
 
   // Post transaction to solver
   postTransactionToSolver({
@@ -135,8 +135,8 @@ export async function sendTransactionSafely(
     step,
     request,
     headers,
-    source: client.source
-  })
+    source: client.source,
+  });
 
   if (
     txHash &&
@@ -150,136 +150,136 @@ export async function sendTransactionSafely(
       step,
       request,
       headers,
-      source: client.source
-    })
+      source: client.source,
+    });
   }
 
   if (!txHash) {
     throw Error(
-      'Transaction hash not returned from handleSendTransactionStep method'
-    )
+      "Transaction hash not returned from handleSendTransactionStep method",
+    );
   }
 
   setTxHashes([
-    { txHash: txHash, chainId: chainId, isBatchTx: isBatchTransaction }
-  ])
+    { txHash: txHash, chainId: chainId, isBatchTx: isBatchTransaction },
+  ]);
 
   //Set up internal functions
   const validate = (res: AxiosResponse<any, any>) => {
     getClient()?.log(
       [
-        'Execute Steps: Polling for confirmation',
-        JSON.stringify(res.data, null, 2)
+        "Execute Steps: Polling for confirmation",
+        JSON.stringify(res.data, null, 2),
       ],
-      LogLevel.Verbose
-    )
+      LogLevel.Verbose,
+    );
 
-    setCheckStatus?.(res.data?.status)
+    setCheckStatus?.(res.data?.status);
 
-    if (res.status === 200 && res.data && res.data.status === 'failure') {
-      throw Error('Transaction failed')
+    if (res.status === 200 && res.data && res.data.status === "failure") {
+      throw Error("Transaction failed");
     }
-    if (res.status === 200 && res.data && res.data.status === 'fallback') {
-      throw Error('Transaction failed: Refunded')
+    if (res.status === 200 && res.data && res.data.status === "fallback") {
+      throw Error("Transaction failed: Refunded");
     }
-    if (res.status === 200 && res.data && res.data.status === 'refund') {
-      throw Error('Transaction failed: Refunded')
+    if (res.status === 200 && res.data && res.data.status === "refund") {
+      throw Error("Transaction failed: Refunded");
     }
-    if (res.status === 200 && res.data && res.data.status === 'pending') {
+    if (res.status === 200 && res.data && res.data.status === "pending") {
       // Extract origin txHashes if provided
       if (res.data.inTxHashes && res.data.inTxHashes.length > 0) {
         const depositTxHashes: NonNullable<
-          Execute['steps'][0]['items']
-        >[0]['txHashes'] = res.data.inTxHashes.map((hash: Address) => ({
+          Execute["steps"][0]["items"]
+        >[0]["txHashes"] = res.data.inTxHashes.map((hash: Address) => ({
           txHash: hash,
           chainId: res.data.originChainId ?? chainId,
-          isBatchTx: isBatchTransaction
-        }))
-        setInternalTxHashes(depositTxHashes)
+          isBatchTx: isBatchTransaction,
+        }));
+        setInternalTxHashes(depositTxHashes);
       }
-      return false
+      return false;
     }
-    if (res.status === 200 && res.data && res.data.status === 'submitted') {
+    if (res.status === 200 && res.data && res.data.status === "submitted") {
       // Extract destination txHashes if provided
       if (res.data.txHashes && res.data.txHashes.length > 0) {
         const fillTxHashes: NonNullable<
-          Execute['steps'][0]['items']
-        >[0]['txHashes'] = res.data.txHashes.map((hash: Address) => ({
+          Execute["steps"][0]["items"]
+        >[0]["txHashes"] = res.data.txHashes.map((hash: Address) => ({
           txHash: hash,
-          chainId: res.data.destinationChainId ?? crossChainIntentChainId
-        }))
-        setTxHashes(fillTxHashes)
+          chainId: res.data.destinationChainId ?? crossChainIntentChainId,
+        }));
+        setTxHashes(fillTxHashes);
       }
 
       // Extract origin txHashes if provided
       if (res.data.inTxHashes && res.data.inTxHashes.length > 0) {
         const depositTxHashes: NonNullable<
-          Execute['steps'][0]['items']
-        >[0]['txHashes'] = res.data.inTxHashes.map((hash: Address) => ({
+          Execute["steps"][0]["items"]
+        >[0]["txHashes"] = res.data.inTxHashes.map((hash: Address) => ({
           txHash: hash,
           chainId: res.data.originChainId ?? chainId,
-          isBatchTx: isBatchTransaction
-        }))
-        setInternalTxHashes(depositTxHashes)
+          isBatchTx: isBatchTransaction,
+        }));
+        setInternalTxHashes(depositTxHashes);
       }
 
       // For Bitcoin destinations, stop polling at 'submitted' since Bitcoin confirmations take 10+ minutes
       // For other chains, continue polling until 'success'
       const isBitcoinDestination =
-        details?.currencyOut?.currency?.chainId === 8253038
-      return isBitcoinDestination
+        details?.currencyOut?.currency?.chainId === 8253038;
+      return isBitcoinDestination;
     }
-    if (res.status === 200 && res.data && res.data.status === 'success') {
+    if (res.status === 200 && res.data && res.data.status === "success") {
       if (txHash) {
         setInternalTxHashes([
-          { txHash: txHash, chainId: chainId, isBatchTx: isBatchTransaction }
-        ])
+          { txHash: txHash, chainId: chainId, isBatchTx: isBatchTransaction },
+        ]);
       } else if (res?.data?.inTxHashes) {
         const depositTxHashes: NonNullable<
-          Execute['steps'][0]['items']
-        >[0]['txHashes'] = res.data?.inTxHashes?.map((hash: Address) => {
+          Execute["steps"][0]["items"]
+        >[0]["txHashes"] = res.data?.inTxHashes?.map((hash: Address) => {
           return {
             txHash: hash,
             chainId: res?.data?.originChainId ?? chainId,
-            isBatchTx: isBatchTransaction
-          }
-        })
-        setInternalTxHashes(depositTxHashes)
+            isBatchTx: isBatchTransaction,
+          };
+        });
+        setInternalTxHashes(depositTxHashes);
       }
       if (res.data?.txHashes && res.data.txHashes.length > 0) {
         const fillTxHashes: NonNullable<
-          Execute['steps'][0]['items']
-        >[0]['txHashes'] = res.data.txHashes.map((hash: Address) => {
+          Execute["steps"][0]["items"]
+        >[0]["txHashes"] = res.data.txHashes.map((hash: Address) => {
           return {
             txHash: hash,
-            chainId: res?.data?.destinationChainId ?? crossChainIntentChainId
-          }
-        })
-        setTxHashes(fillTxHashes)
+            chainId: res?.data?.destinationChainId ?? crossChainIntentChainId,
+          };
+        });
+        setTxHashes(fillTxHashes);
       }
 
-      setCheckStatus?.('success')
+      setCheckStatus?.("success");
 
-      return true
+      return true;
     }
-    return false
-  }
+    return false;
+  };
 
   // Poll the confirmation url to confirm the transaction went through
   const pollForConfirmation = async (receiptController?: AbortController) => {
-    isValidating?.()
+    isValidating?.();
 
     // If websocket is enabled, wait for it to fail before falling back to polling
     if (onWebsocketFailed) {
       try {
-        await onWebsocketFailed()
-        client.log(['WebSocket failed, starting polling'], LogLevel.Verbose)
+        await onWebsocketFailed();
+        client.log(["WebSocket failed, starting polling"], LogLevel.Verbose);
       } catch (e) {
         client.log(
-          ['WebSocket failed promise rejected, skipping polling'],
-          LogLevel.Verbose
-        )
-        return
+          ["WebSocket failed promise rejected, skipping polling"],
+          LogLevel.Verbose,
+        );
+        return;
       }
     }
 
@@ -290,25 +290,25 @@ export async function sendTransactionSafely(
       !transactionCancelled &&
       !confirmationError
     ) {
-      client.log(['Polling for confirmation'], LogLevel.Verbose)
+      client.log(["Polling for confirmation"], LogLevel.Verbose);
 
-      let res: AxiosResponse<any, any> | undefined
+      let res: AxiosResponse<any, any> | undefined;
       if (check?.endpoint && !request?.data?.useExternalLiquidity) {
-        let endpoint = check?.endpoint
+        let endpoint = check?.endpoint;
 
         // Override v2 status endpoint to v3 to get 'submitted' status
-        if (endpoint.includes('/intents/status') && !endpoint.includes('/v3')) {
-          endpoint = endpoint.replace('/intents/status', '/intents/status/v3')
+        if (endpoint.includes("/intents/status") && !endpoint.includes("/v3")) {
+          endpoint = endpoint.replace("/intents/status", "/intents/status/v3");
         }
 
         if (
           client.source &&
-          !endpoint.includes('referrer') &&
-          check?.method === 'GET'
+          !endpoint.includes("referrer") &&
+          check?.method === "GET"
         ) {
-          endpoint = endpoint.includes('?')
+          endpoint = endpoint.includes("?")
             ? `${endpoint}&referrer=${client.source}`
-            : `${endpoint}?referrer=${client.source}`
+            : `${endpoint}?referrer=${client.source}`;
         }
         try {
           res = await axios.request({
@@ -316,40 +316,40 @@ export async function sendTransactionSafely(
             method: check?.method,
             headers: {
               ...getApiKeyHeader(client, request.baseURL),
-              ...headers
-            }
-          })
+              ...headers,
+            },
+          });
         } catch (e) {
           getClient()?.log(
-            ['Execute Steps: Polling for confirmation api error', e],
-            LogLevel.Verbose
-          )
+            ["Execute Steps: Polling for confirmation api error", e],
+            LogLevel.Verbose,
+          );
           res = {
             data: {},
             status: 200,
-            statusText: 'OK',
+            statusText: "OK",
             headers: {},
             config: {
-              headers: {} as AxiosRequestHeaders
-            }
-          }
+              headers: {} as AxiosRequestHeaders,
+            },
+          };
         }
       }
 
-      if (res?.data?.status === 'pending' && waitingForConfirmation) {
+      if (res?.data?.status === "pending" && waitingForConfirmation) {
         //we can now abort checking for the receipt as we know it's complete by the backend
-        receiptController?.abort()
+        receiptController?.abort();
       }
 
       if (!res || validate(res)) {
-        waitingForConfirmation = false // transaction confirmed
+        waitingForConfirmation = false; // transaction confirmed
       } else if (res) {
-        if (res.data.status !== 'pending') {
-          isValidating?.(res)
-          attemptCount++
+        if (res.data.status !== "pending") {
+          isValidating?.(res);
+          attemptCount++;
         }
 
-        await new Promise((resolve) => setTimeout(resolve, pollingInterval))
+        await new Promise((resolve) => setTimeout(resolve, pollingInterval));
       }
     }
 
@@ -357,28 +357,28 @@ export async function sendTransactionSafely(
       if (receipt) {
         throw new SolverStatusTimeoutError(
           txHash as Address,
-          step.requestId ?? '',
-          attemptCount
-        )
+          step.requestId ?? "",
+          attemptCount,
+        );
       } else {
         throw new DepositTransactionTimeoutError(
           txHash as Address,
-          step.requestId ?? '',
-          attemptCount
-        )
+          step.requestId ?? "",
+          attemptCount,
+        );
       }
     }
 
     if (transactionCancelled) {
-      throw Error('Transaction was cancelled')
+      throw Error("Transaction was cancelled");
     }
 
-    return true
-  }
+    return true;
+  };
 
   const waitForTransaction = () => {
-    const controller = new AbortController()
-    const signal = controller.signal
+    const controller = new AbortController();
+    const signal = controller.signal;
 
     return {
       promise: wallet
@@ -387,23 +387,23 @@ export async function sendTransactionSafely(
           chainId,
           (replacementTxHash) => {
             if (signal.aborted) {
-              return
+              return;
             }
-            setTxHashes([{ txHash: replacementTxHash, chainId: chainId }])
-            txHash = replacementTxHash
-            attemptCount = 0 // reset attempt count
+            setTxHashes([{ txHash: replacementTxHash, chainId: chainId }]);
+            txHash = replacementTxHash;
+            attemptCount = 0; // reset attempt count
             getClient()?.log(
-              ['Transaction replaced', replacementTxHash],
-              LogLevel.Verbose
-            )
+              ["Transaction replaced", replacementTxHash],
+              LogLevel.Verbose,
+            );
             postTransactionToSolver({
               txHash: replacementTxHash,
               chainId,
               step,
               request,
               headers,
-              source: client.source
-            })
+              source: client.source,
+            });
 
             if (
               !isBatchTransaction &&
@@ -416,123 +416,123 @@ export async function sendTransactionSafely(
                 step,
                 request,
                 headers,
-                source: client.source
-              })
+                source: client.source,
+              });
             }
           },
           () => {
             if (signal.aborted) {
-              return
+              return;
             }
-            transactionCancelled = true
-            getClient()?.log(['Transaction cancelled'], LogLevel.Verbose)
-          }
+            transactionCancelled = true;
+            getClient()?.log(["Transaction cancelled"], LogLevel.Verbose);
+          },
         )
         .then((data) => {
           if (signal.aborted) {
-            return
+            return;
           }
-          receipt = data
-          setReceipt?.(receipt)
+          receipt = data;
+          setReceipt?.(receipt);
           if (
             receipt &&
-            typeof receipt === 'object' &&
-            'status' in receipt &&
-            receipt.status === 'reverted'
+            typeof receipt === "object" &&
+            "status" in receipt &&
+            receipt.status === "reverted"
           ) {
-            throw 'Transaction Reverted'
+            throw "Transaction Reverted";
           }
           getClient()?.log(
-            ['Transaction Receipt obtained', receipt],
-            LogLevel.Verbose
-          )
+            ["Transaction Receipt obtained", receipt],
+            LogLevel.Verbose,
+          );
         })
         .catch(async (error) => {
           if (signal.aborted) {
-            return
+            return;
           }
 
-          let tenderlyError: TenderlyErrorInfo | null = null
+          let tenderlyError: TenderlyErrorInfo | null = null;
 
           if (receipt && (receipt as TransactionReceipt).transactionHash) {
             tenderlyError = await getTenderlyDetails(
               chainId,
-              (receipt as TransactionReceipt).transactionHash
-            )
+              (receipt as TransactionReceipt).transactionHash,
+            );
           }
           getClient()?.log(
-            ['Error in handleConfirmTransactionStep', error],
-            LogLevel.Error
-          )
-          if (error.message === 'Transaction cancelled') {
-            transactionCancelled = true
+            ["Error in handleConfirmTransactionStep", error],
+            LogLevel.Error,
+          );
+          if (error.message === "Transaction cancelled") {
+            transactionCancelled = true;
           } else {
-            confirmationError = true
+            confirmationError = true;
             throw new TransactionConfirmationError(
               error,
               receipt,
-              tenderlyError
-            )
+              tenderlyError,
+            );
           }
         }),
-      controller
-    }
-  }
+      controller,
+    };
+  };
 
   //If the origin chain is bitcoin, skip polling for confirmation, because the deposit will take too long
   if (chainId === 8253038) {
-    return true
+    return true;
   }
 
   if (isBatchTransaction) {
-    await pollForConfirmation() // Rely on the solver to confirm batch transactions
+    await pollForConfirmation(); // Rely on the solver to confirm batch transactions
   } else if (
     //Sequence internal functions
     // We want synchronous execution in the following cases:
     // - Approval Signature step required first
     // - Bitcoin is the destination (need to poll status API for backend updates)
     // - Canonical route used
-    step.id === 'approve' ||
+    step.id === "approve" ||
     details?.currencyOut?.currency?.chainId === 8253038 ||
     request?.data?.useExternalLiquidity
   ) {
-    await waitForTransaction().promise
+    await waitForTransaction().promise;
     //In the following cases we want to skip polling for confirmation:
     // - Canonical route, lengthy fill time (skip polling)
     // Note: Bitcoin destination now polls status API to get 'submitted' status
     if (!request?.data?.useExternalLiquidity) {
-      await pollForConfirmation()
+      await pollForConfirmation();
     }
   } else {
     const { promise: receiptPromise, controller: receiptController } =
-      waitForTransaction()
-    const confirmationPromise = pollForConfirmation(receiptController)
+      waitForTransaction();
+    const confirmationPromise = pollForConfirmation(receiptController);
 
-    await Promise.race([receiptPromise, confirmationPromise])
-    const isSameChain = details?.currencyOut?.currency?.chainId === chainId
+    await Promise.race([receiptPromise, confirmationPromise]);
+    const isSameChain = details?.currencyOut?.currency?.chainId === chainId;
 
     if (waitingForConfirmation) {
       if (!isSameChain) {
-        await confirmationPromise
+        await confirmationPromise;
       } else {
-        waitingForConfirmation = false
+        waitingForConfirmation = false;
         // For same chain transactions, mark as complete to prevent WebSocket polling fallback
         if (statusControl) {
-          statusControl.lastKnownStatus = 'success'
+          statusControl.lastKnownStatus = "success";
         }
       }
     }
 
     if (!receipt) {
       if (!check) {
-        await receiptPromise
+        await receiptPromise;
       } else {
-        receiptController.abort()
+        receiptController.abort();
       }
     }
   }
 
-  return true
+  return true;
 }
 
 const postSameChainTransactionToSolver = async ({
@@ -541,60 +541,60 @@ const postSameChainTransactionToSolver = async ({
   request,
   headers,
   step,
-  source
+  source,
 }: {
-  calldata: string
-  chainId: number
-  step: Execute['steps'][0]
-  request: AxiosRequestConfig
-  headers?: AxiosRequestHeaders
-  source?: string
+  calldata: string;
+  chainId: number;
+  step: Execute["steps"][0];
+  request: AxiosRequestConfig;
+  headers?: AxiosRequestHeaders;
+  source?: string;
 }) => {
   if (calldata && step.requestId && chainId) {
     getClient()?.log(
-      ['Posting same chain transaction to notify the solver'],
-      LogLevel.Verbose
-    )
+      ["Posting same chain transaction to notify the solver"],
+      LogLevel.Verbose,
+    );
     try {
-      const triggerData: paths['/transactions/single']['post']['requestBody']['content']['application/json'] & {
-        referrer?: string
+      const triggerData: paths["/transactions/single"]["post"]["requestBody"]["content"]["application/json"] & {
+        referrer?: string;
       } = {
         tx: calldata,
         chainId: chainId.toString(),
         requestId: step.requestId,
-        referrer: source
-      }
+        referrer: source,
+      };
 
       axios
         .request({
           url: `${request.baseURL}/transactions/single`,
-          method: 'POST',
+          method: "POST",
           headers: {
             ...getApiKeyHeader(getClient(), request.baseURL),
-            ...headers
+            ...headers,
           },
-          data: triggerData
+          data: triggerData,
         })
         .then(() => {
           getClient()?.log(
-            ['Same chain transaction notified to the solver'],
-            LogLevel.Verbose
-          )
+            ["Same chain transaction notified to the solver"],
+            LogLevel.Verbose,
+          );
         })
         .catch((e) => {
           getClient()?.log(
-            ['Failed to post same chain transaction to solver', e],
-            LogLevel.Warn
-          )
-        })
+            ["Failed to post same chain transaction to solver", e],
+            LogLevel.Warn,
+          );
+        });
     } catch (e) {
       getClient()?.log(
-        ['Failed to post same chain transaction to solver', e],
-        LogLevel.Warn
-      )
+        ["Failed to post same chain transaction to solver", e],
+        LogLevel.Warn,
+      );
     }
   }
-}
+};
 
 const postTransactionToSolver = async ({
   txHash,
@@ -602,56 +602,56 @@ const postTransactionToSolver = async ({
   request,
   headers,
   step,
-  source
+  source,
 }: {
-  txHash: string | undefined
-  chainId: number
-  step: Execute['steps'][0]
-  request: AxiosRequestConfig
-  headers?: AxiosRequestHeaders
-  source?: string
+  txHash: string | undefined;
+  chainId: number;
+  step: Execute["steps"][0];
+  request: AxiosRequestConfig;
+  headers?: AxiosRequestHeaders;
+  source?: string;
 }) => {
-  if (step.id === 'deposit' && txHash) {
+  if (step.id === "deposit" && txHash) {
     getClient()?.log(
-      ['Posting transaction to notify the solver'],
-      LogLevel.Verbose
-    )
+      ["Posting transaction to notify the solver"],
+      LogLevel.Verbose,
+    );
     try {
       const triggerData: NonNullable<
-        paths['/transactions/index']['post']['requestBody']
-      >['content']['application/json'] & { referrer?: string } = {
+        paths["/transactions/index"]["post"]["requestBody"]
+      >["content"]["application/json"] & { referrer?: string } = {
         txHash,
         chainId: chainId.toString(),
-        referrer: source
-      }
+        referrer: source,
+      };
 
       axios
         .request({
           url: `${request.baseURL}/transactions/index`,
-          method: 'POST',
+          method: "POST",
           headers: {
             ...getApiKeyHeader(getClient(), request.baseURL),
-            ...headers
+            ...headers,
           },
-          data: triggerData
+          data: triggerData,
         })
         .then(() => {
           getClient()?.log(
-            ['Transaction notified to the solver'],
-            LogLevel.Verbose
-          )
+            ["Transaction notified to the solver"],
+            LogLevel.Verbose,
+          );
         })
         .catch((e) => {
           getClient()?.log(
-            ['Failed to post transaction to solver', e],
-            LogLevel.Warn
-          )
-        })
+            ["Failed to post transaction to solver", e],
+            LogLevel.Warn,
+          );
+        });
     } catch (e) {
       getClient()?.log(
-        ['Failed to post transaction to solver', e],
-        LogLevel.Warn
-      )
+        ["Failed to post transaction to solver", e],
+        LogLevel.Warn,
+      );
     }
   }
-}
+};

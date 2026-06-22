@@ -1,59 +1,69 @@
-import type { Execute } from './Execute.js'
+import type { Execute } from "./Execute.js";
 
 export type TransactionStepItem = Pick<
-  NonNullable<Execute['steps'][0]['items']>[0],
-  | 'status'
-  | 'orderIds'
-  | 'orderIndexes'
-  | 'orderData'
-  | 'check'
-  | 'progressState'
-  | 'txHashes'
-  | 'internalTxHashes'
-  | 'receipt'
-  | 'checkStatus'
+  NonNullable<Execute["steps"][0]["items"]>[0],
+  | "status"
+  | "orderIds"
+  | "orderIndexes"
+  | "orderData"
+  | "check"
+  | "progressState"
+  | "txHashes"
+  | "internalTxHashes"
+  | "receipt"
+  | "checkStatus"
 > & {
   data: {
-    chainId?: number
-    data: any
-    from: `0x${string}`
-    to: `0x${string}`
-    value: string
-    maxFeePerGas?: string
-    maxPriorityFeePerGas?: string
-    gas?: string
+    chainId?: number;
+    data: any;
+    from: `0x${string}`;
+    to: `0x${string}`;
+    value: string;
+    maxFeePerGas?: string;
+    maxPriorityFeePerGas?: string;
+    gas?: string;
     // Solana
     instructions?: {
       keys: {
-        pubkey: string
-        isSigner: boolean
-        isWritable: boolean
-      }[]
-      programId: string
-      data: string
-    }[]
+        pubkey: string;
+        isSigner: boolean;
+        isWritable: boolean;
+      }[];
+      programId: string;
+      data: string;
+    }[];
     //Bitcoin
-    addressLookupTableAddresses?: string[]
-    psbt?: string
+    addressLookupTableAddresses?: string[];
+    psbt?: string;
     // Tron
     parameter?: {
-      owner_address: string
-      contract_address: string
-      data: string
-    }
+      owner_address: string;
+      contract_address: string;
+      data: string;
+    };
+    // TON (internal-message fields the wallet maps into a TON Connect request)
+    messages?: {
+      from?: string;
+      to: string;
+      value: string;
+      body?: string;
+      stateInit?: string;
+      bounce?: boolean;
+      mode?: number;
+    }[];
     // Lighter (LVM)
     action?: {
-      type: 'transfer'
+      type: "transfer";
       parameters: {
-        toAccountIndex: number
-        assetIndex: number
-        fromRouteType: number
-        toRouteType: number
-        amount: number
-        usdcFee: number
-        memo: string
-      }
-    }
-    type?: string
-  }
-}
+        toAccountIndex: number;
+        assetIndex: number;
+        fromRouteType: number;
+        toRouteType: number;
+        amount: number;
+        usdcFee: number;
+        memo: string;
+      };
+    };
+    type?: string;
+  };
+};

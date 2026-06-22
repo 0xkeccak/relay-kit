@@ -1,99 +1,99 @@
 import type {
   SvmReceipt,
-  SuiReceipt,
   TronReceipt,
-  LvmReceipt
-} from '../types/index.js'
-import type { paths } from './api.js'
-import type { AxiosRequestConfig } from 'axios'
-import type { TransactionReceipt } from 'viem'
+  TonReceipt,
+  LvmReceipt,
+} from "../types/index.js";
+import type { paths } from "./api.js";
+import type { AxiosRequestConfig } from "axios";
+import type { TransactionReceipt } from "viem";
 
 export type CallFees =
-  paths['/execute/call/v2']['post']['responses']['200']['content']['application/json']['fees']
+  paths["/execute/call/v2"]["post"]["responses"]["200"]["content"]["application/json"]["fees"];
 export type CallBreakdown =
-  paths['/execute/call/v2']['post']['responses']['200']['content']['application/json']['breakdown']
+  paths["/execute/call/v2"]["post"]["responses"]["200"]["content"]["application/json"]["breakdown"];
 export type CheckApi = NonNullable<
   NonNullable<
-    paths['/quote/v2']['post']['responses']['200']['content']['application/json']['steps']
-  >['0']['items']
->[0]['check']
+    paths["/quote/v2"]["post"]["responses"]["200"]["content"]["application/json"]["steps"]
+  >["0"]["items"]
+>[0]["check"];
 export type QuoteDetails = NonNullable<
-  paths['/quote/v2']['post']['responses']['200']['content']['application/json']['details']
->
+  paths["/quote/v2"]["post"]["responses"]["200"]["content"]["application/json"]["details"]
+>;
 export type QuoteStepId = NonNullable<
-  paths['/quote/v2']['post']['responses']['200']['content']['application/json']['steps']
->['0']['id']
+  paths["/quote/v2"]["post"]["responses"]["200"]["content"]["application/json"]["steps"]
+>["0"]["id"];
 
-export type TransactionStepState = 'confirming' | 'validating' | 'complete'
+export type TransactionStepState = "confirming" | "validating" | "complete";
 export type SignatureStepState =
-  | 'signing'
-  | 'posting'
-  | 'validating'
-  | 'complete'
+  | "signing"
+  | "posting"
+  | "validating"
+  | "complete";
 
 export type Execute = {
-  errors?: { message?: string; orderId?: string }[]
-  fees?: CallFees
-  breakdown?: CallBreakdown
-  details?: QuoteDetails
-  error?: any // Manually added client error
-  refunded?: boolean
+  errors?: { message?: string; orderId?: string }[];
+  fees?: CallFees;
+  breakdown?: CallBreakdown;
+  details?: QuoteDetails;
+  error?: any; // Manually added client error
+  refunded?: boolean;
 
   steps: {
-    error?: string
-    errorData?: any
-    action: string
-    description: string
-    kind: 'transaction' | 'signature'
-    id: QuoteStepId
-    requestId?: string
-    depositAddress?: string
+    error?: string;
+    errorData?: any;
+    action: string;
+    description: string;
+    kind: "transaction" | "signature";
+    id: QuoteStepId;
+    requestId?: string;
+    depositAddress?: string;
     items: {
-      status: 'complete' | 'incomplete'
+      status: "complete" | "incomplete";
       receipt?:
         | TransactionReceipt
         | SvmReceipt
-        | SuiReceipt
         | TronReceipt
-        | LvmReceipt
+        | TonReceipt
+        | LvmReceipt;
       checkStatus?:
-        | 'refund'
-        | 'waiting'
-        | 'failure'
-        | 'pending'
-        | 'submitted'
-        | 'success'
-        | 'unknown'
-      progressState?: TransactionStepState | SignatureStepState
-      data?: any
-      check?: CheckApi
-      orderIndexes?: number[]
-      orderIds?: string[]
+        | "refund"
+        | "waiting"
+        | "failure"
+        | "pending"
+        | "submitted"
+        | "success"
+        | "unknown";
+      progressState?: TransactionStepState | SignatureStepState;
+      data?: any;
+      check?: CheckApi;
+      orderIndexes?: number[];
+      orderIds?: string[];
       // Manually added
-      error?: string
+      error?: string;
       txHashes?: {
-        txHash: string
-        chainId: number
-        isBatchTx?: boolean
-      }[]
+        txHash: string;
+        chainId: number;
+        isBatchTx?: boolean;
+      }[];
       internalTxHashes?: {
-        txHash: string
-        chainId: number
-        isBatchTx?: boolean
-      }[]
-      errorData?: any
+        txHash: string;
+        chainId: number;
+        isBatchTx?: boolean;
+      }[];
+      errorData?: any;
       orderData?: {
-        crossPostingOrderId?: string
-        orderId: string
-        orderIndex: string
-      }[]
-      isValidatingSignature?: boolean
-    }[]
-  }[]
+        crossPostingOrderId?: string;
+        orderId: string;
+        orderIndex: string;
+      }[];
+      isValidatingSignature?: boolean;
+    }[];
+  }[];
 
   //Manually added request parameters that fetched the data
-  request?: AxiosRequestConfig
-}
+  request?: AxiosRequestConfig;
+};
 
-export type ExecuteStep = NonNullable<Execute['steps']>['0']
-export type ExecuteStepItem = NonNullable<Execute['steps'][0]['items']>[0]
+export type ExecuteStep = NonNullable<Execute["steps"]>["0"];
+export type ExecuteStepItem = NonNullable<Execute["steps"][0]["items"]>[0];

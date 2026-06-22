@@ -1,5 +1,61 @@
 # @reservoir0x/relay-kit-ui
 
+## 8.0.12
+
+### Patch Changes
+
+- Updated dependencies [1fc8190]
+  - @relayprotocol/relay-sdk@5.2.8
+  - @relayprotocol/relay-kit-hooks@3.0.18
+
+## 8.0.11
+
+### Patch Changes
+
+- d3eda06: Support TON destination bridging
+
+## 8.0.10
+
+### Patch Changes
+
+- 4d73aeb: Update CEX address url
+
+## 8.0.9
+
+### Patch Changes
+
+- eac2776: Add link to withdraw page on fill failure and isWithdrawable
+- Updated dependencies [eab4c8f]
+  - @relayprotocol/relay-sdk@5.2.7
+  - @relayprotocol/relay-kit-hooks@3.0.17
+
+## 8.0.8
+
+### Patch Changes
+
+- 22aa1f9: Differentiate hyperliquid usdc pills
+- Updated dependencies [a443358]
+  - @relayprotocol/relay-sdk@5.2.6
+  - @relayprotocol/relay-kit-hooks@3.0.16
+
+## 8.0.7
+
+### Patch Changes
+
+- 31cd7b4: Fix gap in token selector's suggested tokens
+- Updated dependencies [ef54ef1]
+  - @relayprotocol/relay-sdk@5.2.5
+  - @relayprotocol/relay-kit-hooks@3.0.15
+
+## 8.0.6
+
+### Patch Changes
+
+- Updated dependencies [670737f]
+- Updated dependencies [0eedcc1]
+  - @relayprotocol/relay-sdk@5.2.4
+  - @relayprotocol/relay-kit-hooks@3.0.14
+
 ## 8.0.5
 
 ### Patch Changes

@@ -1,5 +1,36 @@
 # @reservoir0x/relay-sdk
 
+## 5.2.8
+
+### Patch Changes
+
+- 1fc8190: Add TON dead address
+
+## 5.2.7
+
+### Patch Changes
+
+- eab4c8f: Add testnet ws
+
+## 5.2.6
+
+### Patch Changes
+
+- a443358: Sync api types
+
+## 5.2.5
+
+### Patch Changes
+
+- ef54ef1: Sync api types
+
+## 5.2.4
+
+### Patch Changes
+
+- 670737f: lighter sdk adapter
+- 0eedcc1: add disableCapabilitiesCheck option to skip wallet.getCapabilities
+
 ## 5.2.3
 
 ### Patch Changes
